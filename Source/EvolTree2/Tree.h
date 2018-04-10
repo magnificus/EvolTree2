@@ -58,6 +58,8 @@ public:
 	UPROPERTY(BlueprintReadWrite, EditAnywhere, Category = "Debug")
 	bool ShowDebug = false;
 
+	UPROPERTY(BlueprintReadWrite, EditAnywhere, Category = "Debug")
+	bool AvoidClipping = true;
 
 	TArray<Branch*> Branches;
 
@@ -86,6 +88,7 @@ public:
 
 	UFUNCTION(BlueprintCallable)
 	void Build(FString &in);
+
 	
 	virtual void OnConstruction(const FTransform& Transform) override;
 };

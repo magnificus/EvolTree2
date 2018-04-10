@@ -5,6 +5,8 @@
 #include "DrawDebugHelpers.h"
 #include <Components/SplineMeshComponent.h>
 #include <Components/SplineComponent.h>
+#include "Engine/World.h"
+
 
 // Sets default values
 ATree::ATree()
@@ -108,6 +110,7 @@ void ATree::InterpretChar(TCHAR In) {
 	}
 }
 
+
 void ATree::Build(FString &In) {
 	Turtle = GetActorTransform();
 	CurrentBranch = new Branch();
@@ -117,8 +120,40 @@ void ATree::Build(FString &In) {
 		const TCHAR c = CurrTotal[i];
 		InterpretChar(c);
 	}
+	TSet<Branch*> InvalidBranches;
 
 	for (Branch *B : Branches) {
+		if (InvalidBranches.Contains(B->Parent)) {
+			InvalidBranches.Add(B);
+			continue;
+		}
+
+		if (AvoidClipping) {
+			FCollisionQueryParams RV_TraceParams = FCollisionQueryParams(FName(TEXT("RV_Trace")), true);
+			//RV_TraceParams.bTraceComplex = true;
+			//RV_TraceParams.bTraceAsyncScene = true;
+			//RV_TraceParams.bReturnPhysicalMaterial = false;
+
+			//Re-initialize hit info
+			FHitResult RV_Hit(ForceInit);
+
+			GetWorld()->LineTraceSingleByChannel(
+				RV_Hit,        //result
+				B->Points[0].GetLocation(),    //start
+				B->Points[B->Points.Num() - 1].GetLocation(), //end
+				ECC_Visibility, //collision channel
+				RV_TraceParams
+			);
+
+			//UE_LOG(LogTemp, Display, TEXT("Line trace from %s to %s "), *(B->Points[0].ToString()), *(B->Points[B->Points.Num() - 1].ToString()));
+			if (RV_Hit.Component != nullptr) {
+				UE_LOG(LogTemp, Display, TEXT("Collision"));
+				InvalidBranches.Add(B);
+				continue;
+			}
+		}
+
+
 		TArray<FVector> VectorPoints;
 		for (FTransform t : B->Points) {
 			VectorPoints.Add(t.GetLocation());
@@ -126,7 +161,6 @@ void ATree::Build(FString &In) {
 		Spline->SetSplinePoints(VectorPoints, ESplineCoordinateSpace::Local);
 
 		float Start = B->WidthStart;
-		//float MP = (End - Start) / (Spline->GetNumberOfSplinePoints() - 1 + 0.00001);
 		for (int i = 0; i < Spline->GetNumberOfSplinePoints() - 1; i++) {
 			FVector Loc1, Loc2;
 			FVector Tan1, Tan2;
@@ -139,15 +173,15 @@ void ATree::Build(FString &In) {
 			S->SetForwardAxis(ESplineMeshAxis::Z);
 			S->SetStartAndEnd(Loc1, Tan1, Loc2, Tan2);
 			S->SetupAttachment(RootComponent);
+			S->SetCollisionResponseToChannel(ECollisionChannel::ECC_MAX, ECollisionResponse::ECR_Overlap);
 
-			//float S1 = Start + i * MP;
-			//float S2 = Start + (i + 1)*MP;
 			float S1 = FMath::Pow(WidthMP, i) * Start;
 			float S2 = FMath::Pow(WidthMP, i+1) * Start;
 
 			S->SetStartScale(FVector2D(S1,S1));
 			S->SetEndScale(FVector2D(S2, S2));
 			S->RegisterComponent();
+
 		}
 	}
 }
