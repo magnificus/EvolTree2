@@ -97,17 +97,7 @@ void ATree::InterpretChar(TCHAR In) {
 	}
 	}
 
-	//if (ShowDebug) {
-	//		DrawDebugSphere(
-	//			GetWorld(),
-	//			Turtle.GetLocation(),
-	//			24,
-	//			32,
-	//			FColor(255, 0, 0),
-	//			true,
-	//			5.0f
-	//		);
-	//}
+
 }
 
 
@@ -140,14 +130,12 @@ void ATree::Build(FString &In) {
 		for (int i = 0; i < Spline->GetNumberOfSplinePoints() - 1; i++) {
 			if (AvoidClipping) {
 				FCollisionQueryParams RV_TraceParams = FCollisionQueryParams(FName(TEXT("RV_Trace")), true);
-
+				RV_TraceParams.bTraceComplex = true;
 				FHitResult RV_Hit(ForceInit);
 
 				FVector StartL = GetActorLocation() + GetActorRotation().RotateVector(VectorPoints[i]);    //start
 				FVector EndL = GetActorLocation() + GetActorRotation().RotateVector(VectorPoints[i+1]);
 				FVector Diff = (EndL - StartL);
-				//StartL -= Diff;
-				//EndL += Diff;
 				GetWorld()->LineTraceSingleByChannel(
 					RV_Hit,        //result
 					StartL,
@@ -164,8 +152,7 @@ void ATree::Build(FString &In) {
 						true, 5, 0, 5
 					);
 				}
-				//UE_LOG(LogTemp, Display, TEXT("Line trace from %s to %s "), *(B->Points[0].ToString()), *(B->Points[B->Points.Num() - 1].ToString()));
-				if (RV_Hit.bBlockingHit) {
+				if (RV_Hit.GetComponent() && FVector::Dist(RV_Hit.ImpactPoint, StartL) > 5.0f) {
 					UE_LOG(LogTemp, Display, TEXT("Collision"));
 					InvalidBranches.Add(B);
 					break;
@@ -182,15 +169,17 @@ void ATree::Build(FString &In) {
 			S->SetForwardAxis(ESplineMeshAxis::Z);
 			S->SetStartAndEnd(Loc1, Tan1, Loc2, Tan2);
 			S->SetupAttachment(RootComponent);
-			//S->SetCollision
 
 			float S1 = FMath::Pow(WidthMP, i) * Start;
 			float S2 = FMath::Pow(WidthMP, i+1) * Start;
 
 			S->SetStartScale(FVector2D(S1,S1));
 			S->SetEndScale(FVector2D(S2, S2));
+			S->SetCollisionResponseToAllChannels(ECR_Block);
+			S->SetCollisionEnabled(ECollisionEnabled::QueryAndPhysics);
+			S->bGenerateOverlapEvents = true;
+
 			S->RegisterComponent();
-			S->SetCollisionProfileName("BlockAll");
 			S->MarkRenderStateDirty();
 			//S->SetCollisionResponseToChannel(ECollisionChannel::ECC_Visibility, ECollisionResponse::ECR_Block);
 

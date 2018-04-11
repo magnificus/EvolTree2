@@ -74,7 +74,7 @@ public:
 		float RotateRoll = 20.0f;
 
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Algorithm")
-		float ForwardMaxRot = 2.0f;
+		float ForwardMaxRot = 15.0f;
 
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Algorithm")
 		FRandomStream Stream;
