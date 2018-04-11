@@ -16,6 +16,12 @@ ATree::ATree()
 	Spline = CreateDefaultSubobject<USplineComponent>(FName("Spline"));
 	Spline->SetupAttachment(RootComponent);
 
+
+	LeafMeshC = NewObject<UInstancedStaticMeshComponent>();
+	LeafMeshC->RegisterComponent();
+	LeafMeshC->SetStaticMesh(LeafMesh);
+	//LeafMeshC->SetFlags(RF_Transactional);
+	AddInstanceComponent(LeafMeshC);
 }
 
 ATree::~ATree() {
@@ -165,7 +171,7 @@ void ATree::Build(FString &In) {
 			USplineMeshComponent *S = NewObject<USplineMeshComponent>(this);
 			S->SetMobility(EComponentMobility::Type::Static);
 			S->CreationMethod = EComponentCreationMethod::UserConstructionScript;
-			S->SetStaticMesh(Mesh);
+			S->SetStaticMesh(BranchMesh);
 			S->SetForwardAxis(ESplineMeshAxis::Z);
 			S->SetStartAndEnd(Loc1, Tan1, Loc2, Tan2);
 			S->SetupAttachment(RootComponent);
@@ -181,8 +187,9 @@ void ATree::Build(FString &In) {
 
 			S->RegisterComponent();
 			S->MarkRenderStateDirty();
-			//S->SetCollisionResponseToChannel(ECollisionChannel::ECC_Visibility, ECollisionResponse::ECR_Block);
 
+			// add leaf
+			LeafMeshC->AddInstance(FTransform(Loc1));
 		}
 	}
 	Spline->UpdateSpline();

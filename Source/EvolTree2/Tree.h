@@ -6,6 +6,8 @@
 #include "GameFramework/Actor.h"
 #include "Runtime/Engine/Classes/Components/SplineComponent.h"
 #include "Branch.h"
+#include "Components/InstancedStaticMeshComponent.h"
+
 #include "Tree.generated.h"
 
 USTRUCT(BlueprintType)
@@ -48,8 +50,15 @@ public:
 	TMap<FString, FString> EvolvingRules;
 
 	UPROPERTY(BlueprintReadWrite, EditAnywhere, Category = "Visual")
-		UStaticMesh *Mesh;
+		UStaticMesh *BranchMesh;
 
+	UPROPERTY(BlueprintReadWrite, EditAnywhere, Category = "Visual")
+		UStaticMesh *LeafMesh;
+
+
+	UInstancedStaticMeshComponent *LeafMeshC;
+
+	//UInstancedStaticMeshComponent *ISMComp
 	UPROPERTY(BlueprintReadWrite, EditAnywhere, Category = "Visual")
 		float WidthMP = 0.9f;
 
