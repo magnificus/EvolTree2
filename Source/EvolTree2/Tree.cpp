@@ -15,13 +15,6 @@ ATree::ATree()
 	PrimaryActorTick.bCanEverTick = true;
 	Spline = CreateDefaultSubobject<USplineComponent>(FName("Spline"));
 	Spline->SetupAttachment(RootComponent);
-
-
-	LeafMeshC = NewObject<UInstancedStaticMeshComponent>();
-	LeafMeshC->RegisterComponent();
-	LeafMeshC->SetStaticMesh(LeafMesh);
-	//LeafMeshC->SetFlags(RF_Transactional);
-	AddInstanceComponent(LeafMeshC);
 }
 
 ATree::~ATree() {
@@ -31,6 +24,8 @@ ATree::~ATree() {
 
 void ATree::OnConstruction(const FTransform& Transform) {
 	Super::OnConstruction(Transform);
+
+
 	CurrTotal = Initial;
 	CurrentWidth = 1.0f;
 	for (Branch *B : Branches)
@@ -38,6 +33,17 @@ void ATree::OnConstruction(const FTransform& Transform) {
 	Branches.Empty();
 	for (int i = 0; i < Generations; i++)
 		Evolve();
+	if (LeafMeshC)
+		LeafMeshC->ClearInstances();
+	else {
+		LeafMeshC = NewObject<UInstancedStaticMeshComponent>(this);
+		LeafMeshC->SetWorldTransform(GetActorTransform());
+		LeafMeshC->RegisterComponent();
+		LeafMeshC->SetStaticMesh(LeafMesh);
+		LeafMeshC->SetFlags(RF_Transactional);
+		AddInstanceComponent(LeafMeshC);
+	}
+
 	Build(CurrTotal);
 }
 // Called when the game starts or when spawned
@@ -189,7 +195,13 @@ void ATree::Build(FString &In) {
 			S->MarkRenderStateDirty();
 
 			// add leaf
-			LeafMeshC->AddInstance(FTransform(Loc1));
+			if (Leafs) {
+				FVector DirV = Loc2 - Loc1;
+				FVector RV = FRotator(0, 90, 0).RotateVector(DirV);
+				RV.Normalize();
+				FRotator RR = FRotator(270, 0, 0);
+				LeafMeshC->AddInstance(FTransform(RR, RV * 50 + Loc1));
+			}
 		}
 	}
 	Spline->UpdateSpline();

@@ -70,6 +70,9 @@ public:
 	UPROPERTY(BlueprintReadWrite, EditAnywhere, Category = "Debug")
 	bool AvoidClipping = true;
 
+	UPROPERTY(BlueprintReadWrite, EditAnywhere, Category = "Debug")
+		bool Leafs = true;
+
 	TArray<Branch*> Branches;
 
 	UPROPERTY(EditAnywhere)
