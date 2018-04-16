@@ -64,6 +64,18 @@ void ATree::Tick(float DeltaTime)
 #define updateR(in) Turtle.SetRotation(Turtle.GetRotation() * FQuat(in));
 #define randRotator FRotator(Stream.FRand()*360,Stream.FRand()*360,Stream.FRand()*360)
 
+void ATree::NewBranch(float Roll) {
+	Branch *CBranch = new Branch();
+	Turtle.SetRotation(Turtle.GetRotation() * FQuat(FRotator(Roll, 0, 0)));
+	CBranch->Points.Add(Turtle);
+	CBranch->Parent = CurrentBranch;
+	CBranch->WidthStart = CurrentWidth;
+	CurrentWidth *= WidthMP;
+	CurrentBranch->Children.Add(CBranch);
+	CurrentBranch = CBranch;
+	Branches.Add(CBranch);
+}
+
 void ATree::InterpretChar(TCHAR In) {
 	switch (In) {
 	case 'F': {
@@ -74,7 +86,6 @@ void ATree::InterpretChar(TCHAR In) {
 		FVector ToAdd = Dir * ForwardLen;
 		Turtle.AddToTranslation(ToAdd);
 		CurrentWidth *= WidthMP;
-		//CurrentBranch->WidthEnd = CurrentWidth;
 		CurrentBranch->Points.Add(Turtle);
 		break;
 	}
@@ -90,21 +101,20 @@ void ATree::InterpretChar(TCHAR In) {
 		break;
 	}
 	case '[': {
-		if (CurrentWidth * WidthMP < BranchMinWidth)
-			break;
-		Branch *CBranch = new Branch();
-		Turtle.SetRotation(Turtle.GetRotation() * FQuat(FRotator(Stream.FRand() < 0.5 ? RotateRoll : -RotateRoll,0 , 0)));
-		CBranch->Points.Add(Turtle);
-		CBranch->Parent = CurrentBranch;
-		CBranch->WidthStart = CurrentWidth;
-		CurrentWidth *= WidthMP;
-		//CBranch->WidthEnd = CurrentWidth;
-		CurrentBranch->Children.Add(CBranch);
-		CurrentBranch = CBranch;
-		Branches.Add(CBranch);
+		NewBranch(RotateRoll);
 		break;
 	}
 	case ']': {
+		Turtle = CurrentBranch->Points[0];
+		CurrentWidth = CurrentBranch->WidthStart;
+		CurrentBranch = CurrentBranch->Parent;
+		break;
+	}
+	case '{': {
+		NewBranch(-RotateRoll);
+		break;
+	}
+	case '}': {
 		Turtle = CurrentBranch->Points[0];
 		CurrentWidth = CurrentBranch->WidthStart;
 		CurrentBranch = CurrentBranch->Parent;
@@ -197,9 +207,9 @@ void ATree::Build(FString &In) {
 			S->RegisterComponent();
 			S->MarkRenderStateDirty();
 
-			// add leaf
-			if (Leafs && B->WidthStart < MaxLeafAttachWidth && B->WidthStart > 0.1) {
-				for (int i = 0; i < LeafDensity; i++) {
+			// add twigs with leafs
+			if (Leafs && B->WidthStart < MaxLeafAttachWidth && B->WidthStart > MinLeafAttachWidth) {
+				for (int i = 0; i < LeafDensity * B->WidthStart; i++) {
 					float PosOffset = Stream.FRand();
 					FRotator RR = randRotator;
 					LeafMeshC->AddInstance(FTransform(RR, Loc1 + (Loc2 - Loc1)*PosOffset));

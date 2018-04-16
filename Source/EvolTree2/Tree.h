@@ -34,6 +34,10 @@ protected:
 	virtual void BeginPlay() override;
 
 public:	
+
+
+	TMap<FString, float> TreeParameters;
+
 	// Called every frame
 	virtual void Tick(float DeltaTime) override;
 
@@ -63,7 +67,7 @@ public:
 		float WidthMP = 0.9f;
 
 	UPROPERTY(BlueprintReadWrite, EditAnywhere, Category = "Algorithm")
-		float BranchMinWidth = 0.0f;
+		float MinLeafAttachWidth = 0.0f;
 
 	UPROPERTY(BlueprintReadWrite, EditAnywhere, Category = "Algorithm")
 		float MaxLeafAttachWidth = 0.7f;
@@ -102,6 +106,9 @@ public:
 
 	UFUNCTION(BlueprintCallable)
 		void Evolve();
+
+	void NewBranch(float Roll);
+
 
 	FTransform Turtle;
 	Branch* CurrentBranch;
