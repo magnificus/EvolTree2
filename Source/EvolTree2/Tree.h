@@ -117,6 +117,10 @@ public:
 	UFUNCTION(BlueprintCallable)
 	void Build(FString &in);
 
+
+	UFUNCTION(BlueprintCallable)
+		float GetFitness();
+
 	
 	virtual void OnConstruction(const FTransform& Transform) override;
 };

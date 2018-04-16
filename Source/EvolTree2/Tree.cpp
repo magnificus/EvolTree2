@@ -101,7 +101,7 @@ void ATree::InterpretChar(TCHAR In) {
 		break;
 	}
 	case '[': {
-		NewBranch(RotateRoll);
+		NewBranch(Stream.FRand() < 0.5 ? RotateRoll : -RotateRoll);
 		break;
 	}
 	case ']': {
@@ -110,16 +110,16 @@ void ATree::InterpretChar(TCHAR In) {
 		CurrentBranch = CurrentBranch->Parent;
 		break;
 	}
-	case '{': {
-		NewBranch(-RotateRoll);
-		break;
-	}
-	case '}': {
-		Turtle = CurrentBranch->Points[0];
-		CurrentWidth = CurrentBranch->WidthStart;
-		CurrentBranch = CurrentBranch->Parent;
-		break;
-	}
+	//case '{': {
+	//	NewBranch(-RotateRoll);
+	//	break;
+	//}
+	//case '}': {
+	//	Turtle = CurrentBranch->Points[0];
+	//	CurrentWidth = CurrentBranch->WidthStart;
+	//	CurrentBranch = CurrentBranch->Parent;
+	//	break;
+	//}
 	}
 
 
@@ -127,7 +127,7 @@ void ATree::InterpretChar(TCHAR In) {
 
 
 void ATree::Build(FString &In) {
-	Turtle = FTransform();
+	Turtle = FTransform(FRotator(0,90,0), FVector(0,0,0));
 	CurrentBranch = new Branch();
 	CurrentBranch->Points.Add(Turtle);
 	Branches.Add(CurrentBranch);

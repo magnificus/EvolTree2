@@ -33,6 +33,7 @@ public:
 		float TreeSpacing = 400;
 	UFUNCTION(BlueprintCallable)
 	void InitPopulation();
+
 	TArray<ATree*> Trees;
 	
 

@@ -15,6 +15,7 @@ AEvolver::AEvolver()
 void AEvolver::BeginPlay()
 {
 	Super::BeginPlay();
+	InitPopulation();
 	
 }
 
@@ -28,7 +29,8 @@ void AEvolver::Tick(float DeltaTime)
 void AEvolver::InitPopulation() {
 	for (int i = 0; i < FMath::Sqrt(NumTrees); i++) {
 		for (int j = 0; j < NumTrees / FMath::Sqrt(NumTrees); j++) {
-			ATree *NewTree = GetWorld()->SpawnActor<AActor>(TreeClass, FTransform(FVector(TreeSpacing * i, TreeSpacing * j, 0));
+			ATree *NewTree = Cast<ATree>(GetWorld()->SpawnActor<AActor>(TreeClass, FTransform(FVector(TreeSpacing * i, TreeSpacing * j, 0))));
+			Trees.Add(NewTree);
 
 		}
 	}
