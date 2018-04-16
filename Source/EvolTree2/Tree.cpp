@@ -62,6 +62,7 @@ void ATree::Tick(float DeltaTime)
 
 #define randR Stream.FRandRange(-ForwardMaxRot, ForwardMaxRot)
 #define updateR(in) Turtle.SetRotation(Turtle.GetRotation() * FQuat(in));
+#define randRotator FRotator(Stream.FRand()*360,Stream.FRand()*360,Stream.FRand()*360)
 
 void ATree::InterpretChar(TCHAR In) {
 	switch (In) {
@@ -89,6 +90,8 @@ void ATree::InterpretChar(TCHAR In) {
 		break;
 	}
 	case '[': {
+		if (CurrentWidth * WidthMP < BranchMinWidth)
+			break;
 		Branch *CBranch = new Branch();
 		Turtle.SetRotation(Turtle.GetRotation() * FQuat(FRotator(Stream.FRand() < 0.5 ? RotateRoll : -RotateRoll,0 , 0)));
 		CBranch->Points.Add(Turtle);
@@ -195,12 +198,12 @@ void ATree::Build(FString &In) {
 			S->MarkRenderStateDirty();
 
 			// add leaf
-			if (Leafs) {
-				FVector DirV = Loc2 - Loc1;
-				FVector RV = FRotator(0, 90, 0).RotateVector(DirV);
-				RV.Normalize();
-				FRotator RR = FRotator(270, 0, 0);
-				LeafMeshC->AddInstance(FTransform(RR, RV * 50 + Loc1));
+			if (Leafs && B->WidthStart < MaxLeafAttachWidth && B->WidthStart > 0.1) {
+				for (int i = 0; i < LeafDensity; i++) {
+					float PosOffset = Stream.FRand();
+					FRotator RR = randRotator;
+					LeafMeshC->AddInstance(FTransform(RR, Loc1 + (Loc2 - Loc1)*PosOffset));
+				}
 			}
 		}
 	}

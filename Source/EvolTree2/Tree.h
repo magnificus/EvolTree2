@@ -59,8 +59,14 @@ public:
 	UInstancedStaticMeshComponent *LeafMeshC;
 
 	//UInstancedStaticMeshComponent *ISMComp
-	UPROPERTY(BlueprintReadWrite, EditAnywhere, Category = "Visual")
+	UPROPERTY(BlueprintReadWrite, EditAnywhere, Category = "Algorithm")
 		float WidthMP = 0.9f;
+
+	UPROPERTY(BlueprintReadWrite, EditAnywhere, Category = "Algorithm")
+		float BranchMinWidth = 0.0f;
+
+	UPROPERTY(BlueprintReadWrite, EditAnywhere, Category = "Algorithm")
+		float MaxLeafAttachWidth = 0.7f;
 
 	float CurrentWidth = 1.0f;
 
@@ -70,8 +76,11 @@ public:
 	UPROPERTY(BlueprintReadWrite, EditAnywhere, Category = "Debug")
 	bool AvoidClipping = true;
 
-	UPROPERTY(BlueprintReadWrite, EditAnywhere, Category = "Debug")
+	UPROPERTY(BlueprintReadWrite, EditAnywhere, Category = "Leafs")
 		bool Leafs = true;
+
+	UPROPERTY(BlueprintReadWrite, EditAnywhere, Category = "Leafs")
+		float LeafDensity = true;
 
 	TArray<Branch*> Branches;
 
