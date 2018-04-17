@@ -15,6 +15,7 @@ ATree::ATree()
 	PrimaryActorTick.bCanEverTick = true;
 	Spline = CreateDefaultSubobject<USplineComponent>(FName("Spline"));
 	Spline->SetupAttachment(RootComponent);
+	Spline->SetWorldLocation(GetActorLocation());
 }
 
 ATree::~ATree() {
@@ -26,31 +27,19 @@ void ATree::OnConstruction(const FTransform& Transform) {
 	Super::OnConstruction(Transform);
 
 
-	CurrTotal = Initial;
-	CurrentWidth = 1.0f;
-	for (Branch *B : Branches)
-		delete B;
-	Branches.Empty();
-	for (int i = 0; i < Generations; i++)
-		Evolve();
-	if (LeafMeshC)
-		LeafMeshC->ClearInstances();
-	else {
-		LeafMeshC = NewObject<UInstancedStaticMeshComponent>(this);
-		LeafMeshC->SetWorldTransform(GetActorTransform());
-		LeafMeshC->RegisterComponent();
-		LeafMeshC->SetStaticMesh(LeafMesh);
-		LeafMeshC->SetFlags(RF_Transactional);
-		AddInstanceComponent(LeafMeshC);
+
+	if (BuildInConstructionScript) {
+		Build(Initial);
+		UpdateFitness();
 	}
 
-	Build(CurrTotal);
 }
 // Called when the game starts or when spawned
 void ATree::BeginPlay()
 {
 
 	Super::BeginPlay();
+
 }
 
 // Called every frame
@@ -105,6 +94,8 @@ void ATree::InterpretChar(TCHAR In) {
 		break;
 	}
 	case ']': {
+		if (!CurrentBranch->Parent)
+			break;
 		Turtle = CurrentBranch->Points[0];
 		CurrentWidth = CurrentBranch->WidthStart;
 		CurrentBranch = CurrentBranch->Parent;
@@ -127,10 +118,30 @@ void ATree::InterpretChar(TCHAR In) {
 
 
 void ATree::Build(FString &In) {
-	Turtle = FTransform(FRotator(0,90,0), FVector(0,0,0));
+	CurrTotal = In;
+	CurrentWidth = 1.0f;
+	for (Branch *B : Branches)
+		delete B;
+	Branches.Empty();
+	for (int i = 0; i < Generations; i++)
+		Evolve();
+	if (LeafMeshC)
+		LeafMeshC->ClearInstances();
+	else {
+		LeafMeshC = NewObject<UInstancedStaticMeshComponent>(this);
+		LeafMeshC->SetWorldTransform(GetActorTransform());
+		LeafMeshC->RegisterComponent();
+		LeafMeshC->SetStaticMesh(LeafMesh);
+		LeafMeshC->SetFlags(RF_Transactional);
+		AddInstanceComponent(LeafMeshC);
+	}
+
+
+	Turtle = FTransform(FRotator(0,0,90), FVector(0,0,0));
 	CurrentBranch = new Branch();
 	CurrentBranch->Points.Add(Turtle);
 	Branches.Add(CurrentBranch);
+
 	for (int i = 0; i < CurrTotal.Len(); i++) {
 		const TCHAR c = CurrTotal[i];
 		InterpretChar(c);
@@ -188,7 +199,7 @@ void ATree::Build(FString &In) {
 			Spline->GetLocationAndTangentAtSplinePoint(i, Loc1, Tan1, ESplineCoordinateSpace::World);
 			Spline->GetLocationAndTangentAtSplinePoint(i+1, Loc2, Tan2, ESplineCoordinateSpace::World);
 			USplineMeshComponent *S = NewObject<USplineMeshComponent>(this);
-			S->SetMobility(EComponentMobility::Type::Static);
+			S->SetMobility(EComponentMobility::Type::Movable);
 			S->CreationMethod = EComponentCreationMethod::UserConstructionScript;
 			S->SetStaticMesh(BranchMesh);
 			S->SetForwardAxis(ESplineMeshAxis::Z);
@@ -232,4 +243,61 @@ void ATree::Evolve() {
 			newS += currC;
 	}
 	CurrTotal = newS;
+}
+
+
+void ATree::UpdateFitness() {
+	float NewFitness = 0.0f;
+	// this fitness only cares about the highest Z
+	for (Branch *B : Branches) {
+		NewFitness = FMath::Max(NewFitness, B->Points[0].GetLocation().Z);
+	}
+	Fitness = NewFitness;
+}
+
+void ATree::CopyFrom(ATree* From) {
+	EvolvingRules = From->EvolvingRules;
+	BranchMesh = From->BranchMesh;
+	LeafMesh = From->LeafMesh;
+	Initial = From->Initial;
+}
+
+void ATree::Mutate() {
+
+	// have a chance to change each rule
+	for (int i = 0; i < EvolvingRules.Num(); i++) {
+		if (Stream.FRand() < RuleMutationChance) {
+			FString Target = AvailableSymbols[Stream.RandRange(0, AvailableSymbols.Num() - 1)];
+			// delete, move or add something to the string
+			if (!EvolvingRules.Contains(Target)) {
+				EvolvingRules.Add(Target);
+			}
+			int Pos = Stream.RandRange(0, EvolvingRules[Target].Len()-1);
+
+			if (Stream.FRand() < 0.5 && EvolvingRules[Target].Len() > 0) {
+				EvolvingRules[Target].RemoveAt(Pos);
+			}
+			else {
+				FString Start = EvolvingRules[Target].Left(Pos);
+				FString ToAdd = AvailableSymbols[Stream.RandRange(0, AvailableSymbols.Num() - 1)];
+				FString End = EvolvingRules[Target].Right(Pos);
+				EvolvingRules[Target] = Start + ToAdd + End;
+			}
+		}
+	}
+
+	if (Stream.FRand() < RuleRemoveChance) {
+		TArray<FString> Keys;
+		EvolvingRules.GetKeys(Keys);
+		EvolvingRules.Remove(Keys[Stream.RandRange(0, Keys.Num() - 1)]);
+	}
+}
+
+ATree* ATree::GetSingleParentChild(FTransform Trans) {
+	ATree *Child = GetWorld()->SpawnActor<ATree>(StaticClass(), Trans);
+	Child->CopyFrom(this);
+	Child->Mutate();
+	Child->Build(Child->Initial);
+	Child->UpdateFitness();
+	return Child;
 }

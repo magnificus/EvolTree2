@@ -10,16 +10,6 @@
 
 #include "Tree.generated.h"
 
-USTRUCT(BlueprintType)
-struct FBuildingRule {
-	GENERATED_BODY()
-
-	UPROPERTY(BlueprintReadWrite)
-	FTransform Trans;
-    UPROPERTY(BlueprintReadWrite)
-	bool NewBranch;
-};
-
 UCLASS()
 class EVOLTREE2_API ATree : public AActor
 {
@@ -107,9 +97,25 @@ public:
 	UFUNCTION(BlueprintCallable)
 		void Evolve();
 
+	UFUNCTION(BlueprintCallable)
+		ATree* GetSingleParentChild(FTransform Trans);
+
+	UFUNCTION(BlueprintCallable)
+		void CopyFrom(ATree* From);
+
+	UFUNCTION(BlueprintCallable)
+		void Mutate();
+
 	void NewBranch(float Roll);
 
 
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Mutation")
+		float RuleMutationChance = 0.01;
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Mutation")
+		float RuleRemoveChance = 0.05;
+	
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Debug")
+		bool BuildInConstructionScript = false;
 	FTransform Turtle;
 	Branch* CurrentBranch;
 	void InterpretChar(TCHAR in);
@@ -117,10 +123,12 @@ public:
 	UFUNCTION(BlueprintCallable)
 	void Build(FString &in);
 
-
 	UFUNCTION(BlueprintCallable)
-		float GetFitness();
-
+		void UpdateFitness();
+	float Fitness = 0.0;
 	
 	virtual void OnConstruction(const FTransform& Transform) override;
+
+	TArray<FString> AvailableSymbols = {"F", "X", "D", "G", "+", "-", "[", "]"};
+
 };

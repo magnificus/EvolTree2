@@ -27,16 +27,20 @@ public:
 	UPROPERTY(EditAnywhere)
 		TSubclassOf<ATree> TreeClass;
 	UPROPERTY(EditAnywhere)
-		int NumTrees = 100;
+		int NumTrees = 50;
 
 	UPROPERTY(EditAnywhere, Category = "Visual")
-		float TreeSpacing = 400;
+		float TreeSpacing = 800;
 	UFUNCTION(BlueprintCallable)
 	void InitPopulation();
 
 	TArray<ATree*> Trees;
 	
-
-	
+	UPROPERTY(EditAnywhere, Category = "Algorithm")
+		float KillRate = 0.1f;
+	UFUNCTION(BlueprintCallable)
+		void NextGeneration();
+	UFUNCTION(BlueprintImplementableEvent)
+		void SetupComplete();
 	
 };

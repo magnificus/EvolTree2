@@ -10,12 +10,9 @@
 struct Branch
 {
 public:
-	//Branch();
-	//~Branch();
 
 	Branch *Parent;
 	TArray<Branch*> Children;
 	TArray<FTransform> Points;
 	float WidthStart = 1;
-	//float WidthEnd = 1;
 };
