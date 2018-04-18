@@ -41,8 +41,10 @@ void AEvolver::NextGeneration() {
 	Trees.Sort([](const ATree &A,const ATree &B) {return A.Fitness < B.Fitness; });
 	TArray<ATree*> NewTrees;
 	TArray<FTransform> ChildPositions;
+	//UE_LOG(LogTemp, Display, TEXT("Remaining trees: %i"), Trees.Num());
+	NewTrees.Add(Trees[0]);
 	for (int i = 1; i < Trees.Num(); i++) {
-		float ratio = ((float)i) / (float)Trees.Num();
+		float ratio = 1 - ((float)i) / (float)Trees.Num();
 		ratio *= 2 * KillRate;
 		if (FMath::FRand() > ratio)
 			NewTrees.Add(Trees[i]);

@@ -59,7 +59,7 @@ void ATree::NewBranch(float Roll) {
 	CBranch->Points.Add(Turtle);
 	CBranch->Parent = CurrentBranch;
 	CBranch->WidthStart = CurrentWidth;
-	CurrentWidth *= WidthMP;
+	//CurrentWidth *= WidthMP;
 	CurrentBranch->Children.Add(CBranch);
 	CurrentBranch = CBranch;
 	Branches.Add(CBranch);
@@ -68,6 +68,8 @@ void ATree::NewBranch(float Roll) {
 void ATree::InterpretChar(TCHAR In) {
 	switch (In) {
 	case 'F': {
+		if (CurrentWidth * WidthMP < MinWidth)
+			break;
 		FRotator ToRotate = FRotator(randR, randR, randR);
 		updateR(ToRotate);
 
@@ -82,15 +84,32 @@ void ATree::InterpretChar(TCHAR In) {
 		break;
 	}
 	case '+': {
-		updateR(FRotator(0, RotateAngle, 0));
+		updateR(FRotator(0, RotationInterval, 0));
 		break;
 	}
 	case '-': {
-		updateR(FRotator(0, -RotateAngle, 0));
+		updateR(FRotator(0, -RotationInterval, 0));
+		break;
+	}
+	case '*': {
+		updateR(FRotator(RotationInterval, 0, 0));
+		break;
+	}
+	case '\'': {
+		updateR(FRotator(-RotationInterval, 0, 0));
+		break;
+	}
+	case '.': {
+		updateR(FRotator(0, 0, RotationInterval));
+		break;
+	}
+	case ':': {
+		updateR(FRotator(0, 0, -RotationInterval));
 		break;
 	}
 	case '[': {
-		NewBranch(Stream.FRand() < 0.5 ? RotateRoll : -RotateRoll);
+		if (Branches.Num() < MaxBranchSegments)
+			NewBranch(0.0f);
 		break;
 	}
 	case ']': {
@@ -101,16 +120,6 @@ void ATree::InterpretChar(TCHAR In) {
 		CurrentBranch = CurrentBranch->Parent;
 		break;
 	}
-	//case '{': {
-	//	NewBranch(-RotateRoll);
-	//	break;
-	//}
-	//case '}': {
-	//	Turtle = CurrentBranch->Points[0];
-	//	CurrentWidth = CurrentBranch->WidthStart;
-	//	CurrentBranch = CurrentBranch->Parent;
-	//	break;
-	//}
 	}
 
 
@@ -137,7 +146,7 @@ void ATree::Build(FString &In) {
 	}
 
 
-	Turtle = FTransform(FRotator(0,0,90), FVector(0,0,0));
+	Turtle = FTransform(FRotator(90,0,0), FVector(0,0,0));
 	CurrentBranch = new Branch();
 	CurrentBranch->Points.Add(Turtle);
 	Branches.Add(CurrentBranch);
@@ -247,12 +256,27 @@ void ATree::Evolve() {
 
 
 void ATree::UpdateFitness() {
-	float NewFitness = 0.0f;
-	// this fitness only cares about the highest Z
-	for (Branch *B : Branches) {
-		NewFitness = FMath::Max(NewFitness, B->Points[0].GetLocation().Z);
+
+	switch (FitnessFun) {
+	case FitnessFunction::Height: {
+		float NewFitness = 0.0f;
+		// this fitness only cares about the highest Z
+		for (Branch *B : Branches) {
+			for (int i = 0; i < B->Points.Num(); i++)
+				NewFitness = FMath::Max(NewFitness, B->Points[i].GetLocation().Z);
+		}
+		Fitness = NewFitness;
+		break;
+	} case FitnessFunction::NumLeafs: {
+		Fitness = LeafMeshC->InstanceBodies.Num();
+		break;
+	} case FitnessFunction::Sun_Straight_Above: {
+		Fitness = GetSunStraightAbove(500, 12);
+		break;
 	}
-	Fitness = NewFitness;
+	}
+
+	UE_LOG(LogTemp, Display, TEXT("Determined current fitness: %f"), Fitness);
 }
 
 void ATree::CopyFrom(ATree* From) {
@@ -263,41 +287,69 @@ void ATree::CopyFrom(ATree* From) {
 }
 
 void ATree::Mutate() {
-
 	// have a chance to change each rule
-	for (int i = 0; i < EvolvingRules.Num(); i++) {
-		if (Stream.FRand() < RuleMutationChance) {
-			FString Target = AvailableSymbols[Stream.RandRange(0, AvailableSymbols.Num() - 1)];
+	for (int i = 0; i < RuleMutationAttempts; i++) {
+		if (FMath::FRand() < RuleMutationChance) {
+			FString Target = AvailableSymbols[FMath::RandRange(0, AvailableSymbols.Num() - 1)];
 			// delete, move or add something to the string
 			if (!EvolvingRules.Contains(Target)) {
 				EvolvingRules.Add(Target);
 			}
-			int Pos = Stream.RandRange(0, EvolvingRules[Target].Len()-1);
+			int Pos = FMath::RandRange(0, EvolvingRules[Target].Len()-1);
 
-			if (Stream.FRand() < 0.5 && EvolvingRules[Target].Len() > 0) {
+			if (FMath::FRand() < 0.5 && EvolvingRules[Target].Len() > 0) {
 				EvolvingRules[Target].RemoveAt(Pos);
 			}
 			else {
-				FString Start = EvolvingRules[Target].Left(Pos);
-				FString ToAdd = AvailableSymbols[Stream.RandRange(0, AvailableSymbols.Num() - 1)];
-				FString End = EvolvingRules[Target].Right(Pos);
-				EvolvingRules[Target] = Start + ToAdd + End;
+				FString Start = EvolvingRules[Target].LeftChop(Pos);
+				FString ToAdd = AvailableSymbols[FMath::RandRange(0, AvailableSymbols.Num() - 1)];
+				FString End = EvolvingRules[Target].RightChop(EvolvingRules[Target].Len() - Pos);
+				EvolvingRules.Add(Target, Start + ToAdd + End);
 			}
 		}
 	}
 
-	if (Stream.FRand() < RuleRemoveChance) {
+	if (FMath::FRand() < RuleRemoveChance && EvolvingRules.Num() > 0) {
 		TArray<FString> Keys;
 		EvolvingRules.GetKeys(Keys);
-		EvolvingRules.Remove(Keys[Stream.RandRange(0, Keys.Num() - 1)]);
+		EvolvingRules.Remove(Keys[FMath::RandRange(0, Keys.Num() - 1)]);
 	}
 }
 
 ATree* ATree::GetSingleParentChild(FTransform Trans) {
-	ATree *Child = GetWorld()->SpawnActor<ATree>(StaticClass(), Trans);
+	ATree *Child = GetWorld()->SpawnActor<ATree>(GetClass(), Trans);
 	Child->CopyFrom(this);
 	Child->Mutate();
 	Child->Build(Child->Initial);
 	Child->UpdateFitness();
 	return Child;
+}
+
+
+float ATree::GetSunStraightAbove(float Radius, int SamplesSide) {
+	int TotalHits = 0;
+	float rel = 2*Radius / SamplesSide;
+	for (int x = -SamplesSide / 2; x < SamplesSide/2; x++) {
+		for (int y = -SamplesSide / 2; y < SamplesSide/2; y++) {
+			FCollisionQueryParams RV_TraceParams = FCollisionQueryParams(FName(TEXT("RV_Trace")), true);
+			RV_TraceParams.bTraceComplex = true;
+			FHitResult RV_Hit(ForceInit);
+
+			FVector StartL = GetActorLocation() + FVector(rel*x, rel*y, 10000);  //start
+			FVector EndL = StartL - FVector(0, 0, 10000);
+			FVector Diff = (EndL - StartL);
+			GetWorld()->LineTraceSingleByChannel(
+				RV_Hit,        //result
+				StartL,
+				EndL, //end
+				ECC_Visibility, //collision channel
+				RV_TraceParams
+			);
+			if (RV_Hit.Component == LeafMeshC) {
+				TotalHits++;
+			}
+		}
+	}
+
+	return TotalHits;
 }
