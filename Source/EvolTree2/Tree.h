@@ -15,7 +15,8 @@ enum class FitnessFunction : uint8
 {
 	Height,
 	NumLeafs,
-	Sun_Straight_Above
+	Sun_Straight_Above,
+	Above_And_Weights
 };
 
 UCLASS()
@@ -113,8 +114,8 @@ public:
 	UFUNCTION(BlueprintCallable)
 		void Evolve();
 
-	UFUNCTION(BlueprintCallable)
-		ATree* GetSingleParentChild(FTransform Trans);
+	ATree* GetSingleParentChild(FTransform Trans);
+	static ATree* GetTwoParentChild(ATree *T1, ATree *T2, FTransform Trans);
 
 	UFUNCTION(BlueprintCallable)
 		void CopyFrom(ATree* From);
@@ -144,6 +145,7 @@ public:
 		void UpdateFitness();
 
 	float GetSunStraightAbove(float Radius, int SamplesSide);
+
 
 	UPROPERTY(BlueprintReadWrite)
 	float Fitness = 0.0;

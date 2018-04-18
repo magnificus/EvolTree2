@@ -42,5 +42,8 @@ public:
 		void NextGeneration();
 	UFUNCTION(BlueprintImplementableEvent)
 		void SetupComplete();
+
+	UFUNCTION(BlueprintImplementableEvent)
+		void asdasd();
 	
 };

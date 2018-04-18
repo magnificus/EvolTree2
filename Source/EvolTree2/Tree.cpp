@@ -271,8 +271,12 @@ void ATree::UpdateFitness() {
 		Fitness = LeafMeshC->InstanceBodies.Num();
 		break;
 	} case FitnessFunction::Sun_Straight_Above: {
-		Fitness = GetSunStraightAbove(500, 12);
+		Fitness = GetSunStraightAbove(300, 10);
 		break;
+	} case FitnessFunction::Above_And_Weights: {
+		Fitness = GetSunStraightAbove(300, 10);
+		Fitness -= Branches.Num() * 0.1;
+		Fitness -= LeafMeshC->InstanceBodies.Num() * 0.05;
 	}
 	}
 
@@ -297,8 +301,14 @@ void ATree::Mutate() {
 			}
 			int Pos = FMath::RandRange(0, EvolvingRules[Target].Len()-1);
 
-			if (FMath::FRand() < 0.5 && EvolvingRules[Target].Len() > 0) {
+			if (FMath::FRand() < 0.4 && EvolvingRules[Target].Len() > 0) {
 				EvolvingRules[Target].RemoveAt(Pos);
+			}
+			else if (FMath::FRand() < 0.1) {
+				EvolvingRules[Target] = EvolvingRules[Target].LeftChop(Pos);
+			}
+			else if (FMath::FRand() < 0.1) {
+				EvolvingRules[Target] = EvolvingRules[Target].RightChop(Pos);
 			}
 			else {
 				FString Start = EvolvingRules[Target].LeftChop(Pos);
@@ -329,8 +339,8 @@ ATree* ATree::GetSingleParentChild(FTransform Trans) {
 float ATree::GetSunStraightAbove(float Radius, int SamplesSide) {
 	int TotalHits = 0;
 	float rel = 2*Radius / SamplesSide;
-	for (int x = -SamplesSide / 2; x < SamplesSide/2; x++) {
-		for (int y = -SamplesSide / 2; y < SamplesSide/2; y++) {
+	for (int x = -SamplesSide / 2; x <= SamplesSide/2; x++) {
+		for (int y = -SamplesSide / 2; y <= SamplesSide/2; y++) {
 			FCollisionQueryParams RV_TraceParams = FCollisionQueryParams(FName(TEXT("RV_Trace")), true);
 			RV_TraceParams.bTraceComplex = true;
 			FHitResult RV_Hit(ForceInit);
@@ -352,4 +362,23 @@ float ATree::GetSunStraightAbove(float Radius, int SamplesSide) {
 	}
 
 	return TotalHits;
+}
+
+
+ATree* ATree::GetTwoParentChild(ATree *T1, ATree *T2, FTransform Trans) {
+	ATree *Child = T1->GetWorld()->SpawnActor<ATree>(T1->GetClass(), Trans);
+	// this attempt randomly combines rules from both parents
+	Child->EvolvingRules = T1->EvolvingRules;
+	for (int i = 0; i < T2->EvolvingRules.Num()*0.5; i++) {
+		TArray<FString> AllRules;
+		T2->EvolvingRules.GetKeys(AllRules);
+		FString ToUse = AllRules[FMath::RandRange(0, AllRules.Num() - 1)];
+		FString S = T2->EvolvingRules[ToUse];
+		Child->EvolvingRules.Add(ToUse, S);
+	}
+
+	Child->Mutate();
+	Child->Build(Child->Initial);
+	Child->UpdateFitness();
+	return Child;
 }

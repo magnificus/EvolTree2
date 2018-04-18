@@ -56,8 +56,11 @@ void AEvolver::NextGeneration() {
 
 	UE_LOG(LogTemp, Display, TEXT("Killed %i trees this generation"), ChildPositions.Num());
 	for (FTransform T : ChildPositions) {
-		ATree* Parent = NewTrees[FMath::RandRange(0, NewTrees.Num() - 1)];
-		NewTrees.Add(Parent->GetSingleParentChild(T));
+		ATree* Parent1 = NewTrees[FMath::RandRange(0, NewTrees.Num() - 1)];
+		ATree* Parent2 = NewTrees[FMath::RandRange(0, NewTrees.Num() - 1)];
+
+		NewTrees.Add(ATree::GetTwoParentChild(Parent1, Parent2, T));
+		//NewTrees.Add(Parent->GetSingleParentChild(T));
 	}
 	Trees = NewTrees;
 }
