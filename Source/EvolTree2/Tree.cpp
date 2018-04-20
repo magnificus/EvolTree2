@@ -225,10 +225,9 @@ void ATree::Build(FString &In) {
 			S->bGenerateOverlapEvents = true;
 
 			S->RegisterComponent();
-			S->MarkRenderStateDirty();
 
 			// add twigs with leafs
-			if (Leafs && B->WidthStart < MaxLeafAttachWidth && B->WidthStart > MinLeafAttachWidth) {
+			if (Leafs && S2 < MaxLeafAttachWidth && S1 > MinLeafAttachWidth) {
 				for (int i = 0; i < LeafDensity * B->WidthStart; i++) {
 					float PosOffset = Stream.FRand();
 					FRotator RR = randRotator;
