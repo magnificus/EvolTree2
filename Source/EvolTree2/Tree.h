@@ -144,6 +144,9 @@ public:
 	UFUNCTION(BlueprintCallable)
 		void UpdateFitness();
 
+	UFUNCTION(BlueprintCallable)
+		static void UpdateFitnessGlobal(TArray<ATree*> Trees, FVector Start, FVector End, int RaysPerSide);
+
 	float GetSunStraightAbove(float Radius, int SamplesSide);
 
 	float GetWeights();

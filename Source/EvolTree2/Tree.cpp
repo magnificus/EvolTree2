@@ -254,6 +254,47 @@ void ATree::Evolve() {
 }
 
 
+
+void ATree::UpdateFitnessGlobal(TArray<ATree*> Trees, FVector Start, FVector End, int RaysPerSide) {
+
+	//float MP = Trees.Num();
+	FVector Diff = End - Start;
+
+	for (ATree *T : Trees)
+		T->Fitness = 0;
+
+	for (int X = 0; X < RaysPerSide+1; X++) {
+		for (int Y = 0; Y < RaysPerSide+1; Y++) {
+			FCollisionQueryParams RV_TraceParams = FCollisionQueryParams(FName(TEXT("RV_Trace")), true);
+			RV_TraceParams.bTraceComplex = true;
+			FHitResult RV_Hit(ForceInit);
+
+			FVector StartL = FVector(Start.X + Diff.X*X/RaysPerSide, Start.Y + Diff.Y*Y/RaysPerSide, 10000);  //start
+			FVector EndL = StartL - FVector(0, 0, 10000);
+			FVector Diff = (EndL - StartL);
+			Trees[0]->GetWorld()->LineTraceSingleByChannel(
+				RV_Hit,        //result
+				StartL,
+				EndL, //end
+				ECC_Visibility, //collision channel
+				RV_TraceParams
+			);
+			ATree* HitA = Cast<ATree>(RV_Hit.Actor);
+			if (HitA && RV_Hit.Component == HitA->LeafMeshC) {
+				HitA->Fitness++;
+			}
+		}
+	}
+
+	float AV = 0;
+	for (ATree *T : Trees)
+		AV += T->Fitness;
+	
+	AV /= Trees.Num() + 0.00001;
+	UE_LOG(LogTemp, Display, TEXT("Average fitness of new generation: %f"), AV);
+
+}
+
 void ATree::UpdateFitness() {
 
 	switch (FitnessFun) {

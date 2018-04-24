@@ -55,12 +55,16 @@ void AEvolver::NextGeneration() {
 	}
 
 	UE_LOG(LogTemp, Display, TEXT("Killed %i trees this generation"), ChildPositions.Num());
+	bool GlobalFitness = EvaluationType == FitnessEvaluationType::Global;
+
 	for (FTransform T : ChildPositions) {
 		ATree* Parent1 = NewTrees[FMath::RandRange(0, NewTrees.Num() - 1)];
 		ATree* Parent2 = NewTrees[FMath::RandRange(0, NewTrees.Num() - 1)];
-
-		NewTrees.Add(ATree::GetTwoParentChild(Parent1, Parent2, T));
+		NewTrees.Add(ATree::GetTwoParentChild(Parent1, Parent2, T, !GlobalFitness));
 		//NewTrees.Add(Parent->GetSingleParentChild(T));
+	}
+	if (GlobalFitness) {
+		ATree::UpdateFitnessGlobal(Trees, FVector(-TreeSpacing/2, -TreeSpacing/2, 0), FVector(FMath::Sqrt(NumTrees)*TreeSpacing + TreeSpacing/2, FMath::Sqrt(NumTrees)*TreeSpacing + TreeSpacing/2, 0), 200);
 	}
 	Trees = NewTrees;
 }
