@@ -274,8 +274,8 @@ void ATree::UpdateFitness() {
 		break;
 	} case FitnessFunction::Above_And_Weights: {
 		Fitness = GetSunStraightAbove(300, 10);
-		Fitness -= Branches.Num() * 0.1;
-		Fitness -= LeafMeshC->InstanceBodies.Num() * 0.05;
+		Fitness += GetWeights();
+
 	}
 	}
 
@@ -363,9 +363,24 @@ float ATree::GetSunStraightAbove(float Radius, int SamplesSide) {
 	return TotalHits;
 }
 
+float ATree::GetWeights() {
+	float Weight = 0;
+	Weight -= Branches.Num() * BranchFactor;
+	Weight -= LeafMeshC->InstanceBodies.Num() * LeafFactor;
+	FVector Offset = FVector(0,0,0);
+	for (Branch *B : Branches) {
+		Offset += (B->Points[0].GetLocation() + B->Points[B->Points.Num()-1].GetLocation())*B->WidthStart * 0.5;
+	}
+	Offset.Z = 0;
+	Weight -= MisAlignedMassFactor * Offset.Size();
+	return Weight;
+}
 
-ATree* ATree::GetTwoParentChild(ATree *T1, ATree *T2, FTransform Trans) {
+
+ATree* ATree::GetTwoParentChild(ATree *T1, ATree *T2, FTransform Trans, bool UpdateFitness) {
 	ATree *Child = T1->GetWorld()->SpawnActor<ATree>(T1->GetClass(), Trans);
+	if (!Child)
+		return nullptr;
 	// this attempt randomly combines rules from both parents
 	Child->EvolvingRules = T1->EvolvingRules;
 	for (int i = 0; i < T2->EvolvingRules.Num()*0.5; i++) {
@@ -378,6 +393,7 @@ ATree* ATree::GetTwoParentChild(ATree *T1, ATree *T2, FTransform Trans) {
 
 	Child->Mutate();
 	Child->Build(Child->Initial);
-	Child->UpdateFitness();
+	if (UpdateFitness)
+		Child->UpdateFitness();
 	return Child;
 }

@@ -115,7 +115,7 @@ public:
 		void Evolve();
 
 	ATree* GetSingleParentChild(FTransform Trans);
-	static ATree* GetTwoParentChild(ATree *T1, ATree *T2, FTransform Trans);
+	static ATree* GetTwoParentChild(ATree *T1, ATree *T2, FTransform Trans, bool UpdateFitness = true);
 
 	UFUNCTION(BlueprintCallable)
 		void CopyFrom(ATree* From);
@@ -146,9 +146,17 @@ public:
 
 	float GetSunStraightAbove(float Radius, int SamplesSide);
 
-
+	float GetWeights();
 	UPROPERTY(BlueprintReadWrite)
 	float Fitness = 0.0;
+
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Weights")
+		float MisAlignedMassFactor = 0.01;
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Weights")
+		float LeafFactor = 0.05;
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Weights")
+		float BranchFactor = 0.1;
+
 	
 	virtual void OnConstruction(const FTransform& Transform) override;
 

@@ -7,6 +7,12 @@
 #include "Tree.h"
 #include "Evolver.generated.h"
 
+UENUM(BlueprintType)
+enum class FitnessEvaluationType : uint8 {
+	Local,
+	Global
+};
+
 UCLASS()
 class EVOLTREE2_API AEvolver : public AActor
 {
@@ -28,6 +34,9 @@ public:
 		TSubclassOf<ATree> TreeClass;
 	UPROPERTY(EditAnywhere)
 		int NumTrees = 50;
+
+	UPROPERTY(EditAnywhere)
+		FitnessEvaluationType EvaluationType;
 
 	UPROPERTY(EditAnywhere, Category = "Visual")
 		float TreeSpacing = 800;
