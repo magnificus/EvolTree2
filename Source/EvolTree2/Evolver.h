@@ -38,8 +38,11 @@ public:
 	UPROPERTY(EditAnywhere)
 		FitnessEvaluationType EvaluationType;
 
+	UPROPERTY(EditAnywhere)
+		bool Log;
+
 	UPROPERTY(EditAnywhere, Category = "Visual")
-		float TreeSpacing = 800;
+		float TreeSpacing = 400;
 	UFUNCTION(BlueprintCallable)
 	void InitPopulation();
 
@@ -52,7 +55,4 @@ public:
 	UFUNCTION(BlueprintImplementableEvent)
 		void SetupComplete();
 
-	UFUNCTION(BlueprintImplementableEvent)
-		void asdasd();
-	
 };

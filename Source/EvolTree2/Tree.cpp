@@ -3,8 +3,7 @@
 #include "Tree.h"
 #include "Branch.h"
 #include "DrawDebugHelpers.h"
-#include <Components/SplineMeshComponent.h>
-#include <Components/SplineComponent.h>
+
 #include "Engine/World.h"
 
 
@@ -132,6 +131,10 @@ void ATree::Build(FString &In) {
 	for (Branch *B : Branches)
 		delete B;
 	Branches.Empty();
+	for (auto *S : Splines) {
+		S->DestroyComponent();
+	}
+	Splines.Empty();
 	for (int i = 0; i < Generations; i++)
 		Evolve();
 	if (LeafMeshC)
@@ -198,7 +201,6 @@ void ATree::Build(FString &In) {
 					);
 				}
 				if (RV_Hit.GetComponent() && FVector::Dist(RV_Hit.ImpactPoint, StartL) > 5.0f) {
-					UE_LOG(LogTemp, Display, TEXT("Collision"));
 					InvalidBranches.Add(B);
 					break;
 				}
@@ -225,7 +227,7 @@ void ATree::Build(FString &In) {
 			S->bGenerateOverlapEvents = true;
 
 			S->RegisterComponent();
-
+			Splines.Add(S);
 			// add twigs with leafs
 			if (Leafs && S2 < MaxLeafAttachWidth && S1 > MinLeafAttachWidth) {
 				for (int i = 0; i < LeafDensity * B->WidthStart; i++) {
@@ -255,7 +257,7 @@ void ATree::Evolve() {
 
 
 
-void ATree::UpdateFitnessGlobal(TArray<ATree*> Trees, FVector Start, FVector End, int RaysPerSide) {
+void ATree::UpdateFitnessGlobal(TArray<ATree*> Trees, FVector Start, FVector End, int RaysPerSide, bool Log) {
 
 	//float MP = Trees.Num();
 	FVector Diff = End - Start;
@@ -291,7 +293,8 @@ void ATree::UpdateFitnessGlobal(TArray<ATree*> Trees, FVector Start, FVector End
 		AV += T->Fitness;
 	
 	AV /= Trees.Num() + 0.00001;
-	UE_LOG(LogTemp, Display, TEXT("Average fitness of new generation: %f"), AV);
+	if (Log)
+		UE_LOG(LogTemp, Display, TEXT("Average fitness of new generation: %f"), AV);
 
 }
 
@@ -320,7 +323,7 @@ void ATree::UpdateFitness() {
 	}
 	}
 
-	UE_LOG(LogTemp, Display, TEXT("Determined current fitness: %f"), Fitness);
+	//UE_LOG(LogTemp, Display, TEXT("Determined current fitness: %f"), Fitness);
 }
 
 void ATree::CopyFrom(ATree* From) {
@@ -350,6 +353,9 @@ void ATree::Mutate() {
 			else if (FMath::FRand() < 0.1) {
 				EvolvingRules[Target] = EvolvingRules[Target].RightChop(Pos);
 			}
+			else if (FMath::FRand() < RuleRemoveChance && EvolvingRules.Num() > 0) {
+				EvolvingRules.Remove(Target);
+			}
 			else {
 				FString Start = EvolvingRules[Target].LeftChop(Pos);
 				FString ToAdd = AvailableSymbols[FMath::RandRange(0, AvailableSymbols.Num() - 1)];
@@ -359,11 +365,6 @@ void ATree::Mutate() {
 		}
 	}
 
-	if (FMath::FRand() < RuleRemoveChance && EvolvingRules.Num() > 0) {
-		TArray<FString> Keys;
-		EvolvingRules.GetKeys(Keys);
-		EvolvingRules.Remove(Keys[FMath::RandRange(0, Keys.Num() - 1)]);
-	}
 }
 
 ATree* ATree::GetSingleParentChild(FTransform Trans) {
@@ -418,8 +419,9 @@ float ATree::GetWeights() {
 }
 
 
-ATree* ATree::GetTwoParentChild(ATree *T1, ATree *T2, FTransform Trans, bool UpdateFitness) {
-	ATree *Child = T1->GetWorld()->SpawnActor<ATree>(T1->GetClass(), Trans);
+ATree* ATree::GetTwoParentChild(ATree *T1, ATree *T2, FTransform Trans, bool UpdateFitness, ATree *Child) {
+	if (!Child)
+		Child = T1->GetWorld()->SpawnActor<ATree>(T1->GetClass(), Trans);
 	if (!Child)
 		return nullptr;
 	// this attempt randomly combines rules from both parents

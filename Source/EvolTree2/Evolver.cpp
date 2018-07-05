@@ -7,7 +7,7 @@
 // Sets default values
 AEvolver::AEvolver()
 {
- 	// Set this actor to call Tick() every frame.  You can turn this off to improve performance if you don't need it.
+	// Set this actor to call Tick() every frame.  You can turn this off to improve performance if you don't need it.
 	PrimaryActorTick.bCanEverTick = true;
 
 }
@@ -18,7 +18,7 @@ void AEvolver::BeginPlay()
 	Super::BeginPlay();
 	InitPopulation();
 	SetupComplete();
-	
+
 }
 
 // Called every frame
@@ -38,10 +38,10 @@ void AEvolver::InitPopulation() {
 }
 
 void AEvolver::NextGeneration() {
-	Trees.Sort([](const ATree &A,const ATree &B) {return A.Fitness < B.Fitness; });
+	Trees.Sort([](const ATree &A, const ATree &B) {return A.Fitness < B.Fitness; });
 	TArray<ATree*> NewTrees;
 	TArray<FTransform> ChildPositions;
-	//UE_LOG(LogTemp, Display, TEXT("Remaining trees: %i"), Trees.Num());
+	TArray<ATree*> ToBeModifiedTrees;
 	NewTrees.Add(Trees[0]);
 	for (int i = 1; i < Trees.Num(); i++) {
 		float ratio = 1 - ((float)i) / (float)Trees.Num();
@@ -50,21 +50,25 @@ void AEvolver::NextGeneration() {
 			NewTrees.Add(Trees[i]);
 		else {
 			ChildPositions.Add(Trees[i]->GetActorTransform());
-			Trees[i]->Destroy();
+			ToBeModifiedTrees.Add(Trees[i]);
+			//Trees[i]->Destroy();
 		}
 	}
 
 	UE_LOG(LogTemp, Display, TEXT("Killed %i trees this generation"), ChildPositions.Num());
 	bool GlobalFitness = EvaluationType == FitnessEvaluationType::Global;
 
-	for (FTransform T : ChildPositions) {
+	for (int i = 0; i < ChildPositions.Num(); i++) {
+		FTransform T = ChildPositions[i];
 		ATree* Parent1 = NewTrees[FMath::RandRange(0, NewTrees.Num() - 1)];
 		ATree* Parent2 = NewTrees[FMath::RandRange(0, NewTrees.Num() - 1)];
-		NewTrees.Add(ATree::GetTwoParentChild(Parent1, Parent2, T, !GlobalFitness));
+		ATree::GetTwoParentChild(Parent1, Parent2, T, !GlobalFitness, ToBeModifiedTrees[i]);
+		NewTrees.Add(ToBeModifiedTrees[i]);
+		//NewTrees.Add(ATree::GetTwoParentChild(Parent1, Parent2, T, !GlobalFitness));
 		//NewTrees.Add(Parent->GetSingleParentChild(T));
 	}
 	if (GlobalFitness) {
-		ATree::UpdateFitnessGlobal(Trees, FVector(-TreeSpacing/2, -TreeSpacing/2, 0), FVector(FMath::Sqrt(NumTrees)*TreeSpacing + TreeSpacing/2, FMath::Sqrt(NumTrees)*TreeSpacing + TreeSpacing/2, 0), 200);
+		ATree::UpdateFitnessGlobal(Trees, FVector(-TreeSpacing / 2, -TreeSpacing / 2, 0), FVector(FMath::Sqrt(NumTrees)*TreeSpacing + TreeSpacing / 2, FMath::Sqrt(NumTrees)*TreeSpacing + TreeSpacing / 2, 0), 200, Log);
 	}
 	Trees = NewTrees;
 }

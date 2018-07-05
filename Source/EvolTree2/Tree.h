@@ -7,6 +7,8 @@
 #include "Runtime/Engine/Classes/Components/SplineComponent.h"
 #include "Branch.h"
 #include "Components/InstancedStaticMeshComponent.h"
+#include <Components/SplineMeshComponent.h>
+#include <Components/SplineComponent.h>
 #include "Tree.generated.h"
 
 
@@ -115,7 +117,7 @@ public:
 		void Evolve();
 
 	ATree* GetSingleParentChild(FTransform Trans);
-	static ATree* GetTwoParentChild(ATree *T1, ATree *T2, FTransform Trans, bool UpdateFitness = true);
+	static ATree* GetTwoParentChild(ATree *T1, ATree *T2, FTransform Trans, bool UpdateFitness = true, ATree *Child = nullptr);
 
 	UFUNCTION(BlueprintCallable)
 		void CopyFrom(ATree* From);
@@ -136,6 +138,7 @@ public:
 		bool BuildInConstructionScript = false;
 	FTransform Turtle;
 	Branch* CurrentBranch;
+	TArray<USplineMeshComponent*> Splines;
 	void InterpretChar(TCHAR in);
 
 	UFUNCTION(BlueprintCallable)
@@ -145,7 +148,7 @@ public:
 		void UpdateFitness();
 
 	UFUNCTION(BlueprintCallable)
-		static void UpdateFitnessGlobal(TArray<ATree*> Trees, FVector Start, FVector End, int RaysPerSide);
+		static void UpdateFitnessGlobal(TArray<ATree*> Trees, FVector Start, FVector End, int RaysPerSide, bool Log);
 
 	float GetSunStraightAbove(float Radius, int SamplesSide);
 
@@ -163,6 +166,6 @@ public:
 	
 	virtual void OnConstruction(const FTransform& Transform) override;
 
-	TArray<FString> AvailableSymbols = {"F", "X", "A", "B", "C", "D", "+", "-", "[", "]", "*", "'", ".", ":"};
+	TArray<FString> AvailableSymbols = {"F", "X", "A", "B", "C", "D", "+", "-", "[", "]", "*", "'", ".", ":", "O", "P", "Q", "E", "N", "M", "O", "R"};
 
 };
