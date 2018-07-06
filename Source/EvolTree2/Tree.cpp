@@ -18,18 +18,16 @@ ATree::ATree()
 }
 
 ATree::~ATree() {
-	for (Branch *B : Branches)
-		delete B;
+	//for (UBranch *B : Branches)
+	//	delete B;
 }
 
 void ATree::OnConstruction(const FTransform& Transform) {
 	Super::OnConstruction(Transform);
 
-
-
 	if (BuildInConstructionScript) {
 		Build(Initial);
-		UpdateFitness();
+		//UpdateFitness();
 	}
 
 }
@@ -53,7 +51,7 @@ void ATree::Tick(float DeltaTime)
 #define randRotator FRotator(Stream.FRand()*360,Stream.FRand()*360,Stream.FRand()*360)
 
 void ATree::NewBranch(float Roll) {
-	Branch *CBranch = new Branch();
+	UBranch *CBranch = NewObject<UBranch>();
 	Turtle.SetRotation(Turtle.GetRotation() * FQuat(FRotator(Roll, 0, 0)));
 	CBranch->Points.Add(Turtle);
 	CBranch->Parent = CurrentBranch;
@@ -128,8 +126,8 @@ void ATree::InterpretChar(TCHAR In) {
 void ATree::Build(FString &In) {
 	CurrTotal = In;
 	CurrentWidth = 1.0f;
-	for (Branch *B : Branches)
-		delete B;
+	//for (UBranch *B : Branches)
+	//	delete B;
 	Branches.Empty();
 	for (auto *S : Splines) {
 		S->DestroyComponent();
@@ -150,7 +148,7 @@ void ATree::Build(FString &In) {
 
 
 	Turtle = FTransform(FRotator(90,0,0), FVector(0,0,0));
-	CurrentBranch = new Branch();
+	CurrentBranch = NewObject<UBranch>();
 	CurrentBranch->Points.Add(Turtle);
 	Branches.Add(CurrentBranch);
 
@@ -158,9 +156,9 @@ void ATree::Build(FString &In) {
 		const TCHAR c = CurrTotal[i];
 		InterpretChar(c);
 	}
-	TSet<Branch*> InvalidBranches;
+	TSet<UBranch*> InvalidBranches;
 
-	for (Branch *B : Branches) {
+	for (UBranch *B : Branches) {
 		if (InvalidBranches.Contains(B->Parent)) {
 			InvalidBranches.Add(B);
 			continue;
@@ -262,8 +260,9 @@ void ATree::UpdateFitnessGlobal(TArray<ATree*> Trees, FVector Start, FVector End
 	//float MP = Trees.Num();
 	FVector Diff = End - Start;
 
-	for (ATree *T : Trees)
+	for (ATree *T : Trees) {
 		T->Fitness = 0;
+	}
 
 	for (int X = 0; X < RaysPerSide+1; X++) {
 		for (int Y = 0; Y < RaysPerSide+1; Y++) {
@@ -288,13 +287,20 @@ void ATree::UpdateFitnessGlobal(TArray<ATree*> Trees, FVector Start, FVector End
 		}
 	}
 
+	for (ATree *T : Trees) {
+		T->Fitness += T->GetWeights();
+	}
+
 	float AV = 0;
-	for (ATree *T : Trees)
+	float Highest = 0;
+	for (ATree *T : Trees) {
 		AV += T->Fitness;
+		Highest = FMath::Max(Highest, T->Fitness);
+	}
 	
 	AV /= Trees.Num() + 0.00001;
 	if (Log)
-		UE_LOG(LogTemp, Display, TEXT("Average fitness of new generation: %f"), AV);
+		UE_LOG(LogTemp, Display, TEXT("Average fitness of new generation: %f, Highest fitness of the new generation: %f"), AV, Highest);
 
 }
 
@@ -304,7 +310,7 @@ void ATree::UpdateFitness() {
 	case FitnessFunction::Height: {
 		float NewFitness = 0.0f;
 		// this fitness only cares about the highest Z
-		for (Branch *B : Branches) {
+		for (UBranch *B : Branches) {
 			for (int i = 0; i < B->Points.Num(); i++)
 				NewFitness = FMath::Max(NewFitness, B->Points[i].GetLocation().Z);
 		}
@@ -408,13 +414,14 @@ float ATree::GetSunStraightAbove(float Radius, int SamplesSide) {
 float ATree::GetWeights() {
 	float Weight = 0;
 	Weight -= Branches.Num() * BranchFactor;
-	Weight -= LeafMeshC->InstanceBodies.Num() * LeafFactor;
+	if (LeafMeshC)
+		Weight -= LeafMeshC->InstanceBodies.Num() * LeafFactor;
 	FVector Offset = FVector(0,0,0);
-	for (Branch *B : Branches) {
-		Offset += (B->Points[0].GetLocation() + B->Points[B->Points.Num()-1].GetLocation())*B->WidthStart * 0.5;
+	for (UBranch *B : Branches) {
+			Offset += (B->Points[0].GetLocation() + B->Points[B->Points.Num()-1].GetLocation())*B->WidthStart * 0.5;
 	}
 	Offset.Z = 0;
-	Weight -= MisAlignedMassFactor * Offset.Size();
+	Weight -= MisAlignedMassFactor * Offset.SizeSquared();
 	return Weight;
 }
 

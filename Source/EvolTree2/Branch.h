@@ -3,16 +3,19 @@
 #pragma once
 
 #include "CoreMinimal.h"
-
+#include "Branch.generated.h"
 /**
  * 
  */
-struct Branch
+
+UCLASS()
+class UBranch : public UObject
 {
 public:
 
-	Branch *Parent;
-	TArray<Branch*> Children;
+	GENERATED_BODY()
+	UBranch *Parent;
+	TArray<UBranch*> Children;
 	TArray<FTransform> Points;
 	float WidthStart = 1;
 };

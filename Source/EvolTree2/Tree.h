@@ -96,7 +96,8 @@ public:
 	UPROPERTY(BlueprintReadWrite, EditAnywhere, Category = "Leafs")
 		float LeafDensity = true;
 
-	TArray<Branch*> Branches;
+	UPROPERTY()
+	TArray<UBranch*> Branches;
 
 	UPROPERTY(EditAnywhere)
 	USplineComponent* Spline;
@@ -137,7 +138,7 @@ public:
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Debug")
 		bool BuildInConstructionScript = false;
 	FTransform Turtle;
-	Branch* CurrentBranch;
+	UBranch* CurrentBranch;
 	TArray<USplineMeshComponent*> Splines;
 	void InterpretChar(TCHAR in);
 
